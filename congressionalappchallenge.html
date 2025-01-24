@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+   <meta charset="UTF-8">
+   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+   <title>Foodify: Healthy or Not?</title>
+   <style>
+       :root {
+           --accent-color: rgb(255, 136, 0);
+           --healthy-color: #28a745;
+           --unhealthy-color: #dc3545;
+           --unknown-color: #808080;
+           --input-border-color: #FF4500;
+           --dark-bg-color: #000000;
+           --dark-button-color:rgb(13, 255, 0);
+           --dark--button--text:#ffffff;
+           --dark--accent-color:rgb(13, 255,0);
+           --dark--smiley-face: rgb(13, 255,0);
+       }
+       body {
+           font-family: 'Roboto', Arial, sans-serif;
+           margin: 0;
+           padding: 0 10px;
+           display: flex;
+           flex-direction: column;
+           align-items: center;
+           justify-content: center;
+           min-height: 100vh;
+           background-color: white;
+           transition: background-color 0.5s ease-in-out, color 0.5s ease-in-out;
+           color: var(--accent-color);
+       }
+       h1 {
+           color: var(--accent-color);
+           font-size: 60px;
+           margin-bottom: 30px;
+           text-align: center;
+       }
+       .input-section {
+           display: flex;
+           flex-direction: column;
+           align-items: center;
+           width: 100%;
+           padding: 0 20px;
+           max-width: 400px;
+       }
+       input[type="text"],
+       input[type="submit"],
+       button {
+           font-size: 18px;
+           padding: 15px;
+           width: 100%;
+           border-radius: 10px;
+           border: 2px solid var(--accent-color);
+           box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+           margin-bottom: 15px;
+           outline: none;
+           transition: all 0.3s;
+       }
+       input[type="text"] {
+           color: black;
+           padding-left: 40px;
+           background: url('https://upload.wikimedia.org/wikipedia/commons/thumb/6/6e/Magnifying_glass_icon.svg/512px-Magnifying_glass_icon.svg.png') no-repeat 10px center;
+           background-size: 20px;
+       }
+       input[type="text"]:focus {
+           border-color: var(--input-border-color);
+       }
+       input[type="submit"],
+       button {
+           background-color: var(--accent-color);
+           color: white;
+           cursor: pointer;
+           transition: background-color 0.3s, transform 0.2s;
+       }
+       input[type="submit"]:hover,
+       button:hover {
+           background-color: rgb(255, 119, 0);
+           transform: scale(1.05);
+       }
+       body.dark-mode {
+           background-color: var(--dark-bg-color);
+           color: var(--dark-text-color);
+       }
+       body.dark-mode button,
+       body.dark-mode input[type="submit"] {
+           background-color: var(--dark-button-color);
+           border-color: var(--dark-button-color);
+           color: var(--dark-text-color);
+       }
+       .result-section,
+       .nutrients-section {
+           margin-top: 20px;
+           font-size: 18px;
+           color: rgb(255, 255, 255);
+           text-align: center;
+           opacity: 10;
+           transition: opacity 0.3s ease-in-out;
+       }
+       .result-section.visible,
+       .nutrients-section.visible {
+           opacity: 1;
+       }
+       .smiley-face {
+           font-size: 80px;
+           font-weight: bold;
+           margin-bottom: 20px;
+           color: var(--accent-color);
+           padding: 20px;
+           border-radius: 50%;
+           border: 5px solid transparent;
+           transition: border-color 0.3s, transform 0.5s;
+           width: 100px;
+           height: 100px;
+           display: flex;
+           align-items: center;
+           justify-content: center;
+       }
+       footer {
+           margin-top: 50px;
+           font-size: 14px;
+           color: var(--accent-color);
+       }
+       @media (max-width: 600px) {
+           h1 {
+               font-size: 45px;
+           }
+           .input-section {
+               max-width: 100%;
+           }
+       }
+   </style>
+</head>
+<body>
+   <div class="smiley-face" id="smileyFace">☺︎</div>
+   <h1>Foodify</h1>
+   <div class="input-section">
+       <form id="foodForm" aria-label="Food health checker">
+           <input type="text" id="foodInput" list="foodSuggestions" name="food" placeholder="Enter a food or drink..." aria-label="Food input" required>
+           <datalist id="foodSuggestions">
+               <option value="Apple">
+               <option value="Pizza">
+               <option value="Broccoli">
+               <option value="Burger">
+               <option value="Banana">
+               <option value="Coke">
+               <option value="Ragi Java">
+               <option value="Channa Masala">
+               <option value="Sambar">
+               <option value="Jawar Roti">
+               <option value="Sunnundalu Laddu">
+               <option value="Rava Laddus">
+               <option value="Blueberry Muffin">
+               <option value="Paneer">
+                <option value="Kimbap">
+
+           </datalist>
+           <input type="submit" value="Check if it's healthy">
+           <button type="button" id="clearButton" aria-label="Clear the current input">Clear</button>
+           <button type="button" id="voiceInput" aria-label="Activate voice input">🎤 Speak</button>
+           <button type="button" id="toggleMode">🌑 Toggle Dark Mode</button>
+       </form>
+   </div>
+   <div class="loading-spinner" id="loadingSpinner" style="display: none;">Loading...</div>
+   <div class="result-section" id="resultSection"></div>
+   <div class="nutrients-section" id="nutrientsSection"></div>
+   <footer>
+       <p>&copy; 2024 Foodify. All rights reserved.</p>
+   </footer>
+   <script src="https://cdnjs.cloudflare.com/ajax/libs/fuse.js/6.4.6/fuse.min.js"></script>
+   <script>
+       const foodList = [
+           { name: "Apple", healthy: true, calories: 95, carbs: 25, protein: 0.5, fat: 0.3 },
+           { name: "Pizza", healthy: false, calories: 285, carbs: 36, protein: 12, fat: 10 },
+           { name: "Broccoli", healthy: true, calories: 55, carbs: 11, protein: 3.7, fat: 0.6 },
+           { name: "Burger", healthy: false, calories: 354, carbs: 29, protein: 17, fat: 18 },
+           { name: "Banana", healthy: true, calories: 105, carbs: 27, protein: 1.3, fat: 0.4 },
+           { name: "Coke", healthy: false, calories: 140, carbs: 39, protein: 0, fat: 0 },
+           { name: "Ragi Java", healthy: true, calories: 344, carbs: 72, protein: 7, fat: 1.3 },
+           { name: "Channa Masala", healthy: true, calories: 280, carbs: 45, protein: 12, fat: 7 },
+           { name: "Sambar", healthy: true, calories: 150, carbs: 25, protein: 6, fat: 2 },
+           { name: "Jawar Roti", healthy: true, calories: 120, carbs: 34, protein: 3, fat: 1 },
+           { name: "Sunnundalu Laddu", healthy: true, calories: 120, carbs: 18, protein: 4, fat: 5 },
+           { name: "Rava Laddus", healthy: false, calories: 140, carbs: 39, protein: 0, fat: 0 },
+           { name: "Blueberry Muffin", healthy: false, calories: 385, carbs: 58, protein: 5, fat: 15 },
+           { name: "Paneer", healthy: true, calories: 265, carbs: 4, protein: 18, fat: 20 },
+           { name: "Sprite", healthy: false, calories: 140, carbs: 38, protein: 0, fat: 0 },
+           {  name: "Kimbap", healthy: false, calories: 400, carbs: 60, protein:12, fat:12 }
+       ];
+
+       const fuse = new Fuse(foodList, { keys: ['name'] });
+
+       document.getElementById('foodForm').addEventListener('submit', function (event) {
+           event.preventDefault();
+           const foodInput = document.getElementById('foodInput').value.trim();
+           if (!foodInput) {
+               alert('Please enter a food or drink.');
+               return;
+           }
+
+           const results = fuse.search(foodInput);
+           const resultSection = document.getElementById('resultSection');
+           const nutrientsSection = document.getElementById('nutrientsSection');
+           const smileyFace = document.getElementById('smileyFace');
+           const loadingSpinner = document.getElementById('loadingSpinner');
+
+           resultSection.innerHTML = '';
+           nutrientsSection.innerHTML = '';
+           smileyFace.textContent = '☺︎';
+           loadingSpinner.style.display = 'block';
+
+           setTimeout(() => {
+               loadingSpinner.style.display = 'none';
+               if (results.length > 0) {
+                   const foodInfo = results[0].item;
+                   resultSection.innerHTML = `<h2>${foodInfo.healthy ? "Healthy" : "Unhealthy"}</h2>
+                       <p>${foodInfo.healthy ? "This food is considered healthy!" : "This food is considered unhealthy!"}</p>`;
+                   nutrientsSection.innerHTML = `<h2>Nutritional Information</h2>
+                       <p>Calories: ${foodInfo.calories}</p>
+                       <p>Carbs: ${foodInfo.carbs}g</p>
+                       <p>Protein: ${foodInfo.protein}g</p>
+                       <p>Fat: ${foodInfo.fat}g</p>`;
+                   smileyFace.textContent = foodInfo.healthy ? '🙂' : '🙁';
+                   document.body.style.backgroundColor = foodInfo.healthy ? '#28a745' : '#dc3545';
+               } else {
+                   resultSection.innerHTML = '<h2>Unknown Food</h2><p>Please try another food.</p>';
+                   smileyFace.textContent = '🤔';
+                   document.body.style.backgroundColor = '#808080';
+               }
+           }, 1000);
+       });
+
+       document.getElementById('clearButton').addEventListener('click', function () {
+           document.getElementById('foodInput').value = '';
+           document.getElementById('resultSection').textContent = '';
+           document.getElementById('nutrientsSection').textContent = '';
+           document.getElementById('smileyFace').textContent = '☺︎';
+           document.body.style.backgroundColor = 'white';
+       });
+
+       const toggleButton = document.getElementById('toggleMode');
+       toggleButton.addEventListener('click', function () {
+           document.body.classList.toggle('dark-mode');
+           toggleButton.textContent = document.body.classList.contains('dark-mode') ? '☀️ Toggle Light Mode' : '🌑 Toggle Dark Mode';
+       });
+
+       // Voice Input Functionality
+       const voiceInputButton = document.getElementById('voiceInput');
+       const foodInputField = document.getElementById('foodInput');
+
+       voiceInputButton.addEventListener('click', () => {
+           const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+           if (!SpeechRecognition) {
+               alert('Sorry, your browser does not support voice input.');
+               return;
+           }
+
+           const recognition = new SpeechRecognition();
+           recognition.lang = 'en-US';
+           recognition.interimResults = false;
+           recognition.maxAlternatives = 1;
+
+           recognition.start();
+
+           recognition.onresult = (event) => {
+               const transcript = event.results[0][0].transcript;
+               foodInputField.value = transcript;
+           };
+
+           recognition.onerror = (event) => {
+               alert('Error occurred in recognition: ' + event.error);
+           };
+
+           recognition.onend = () => {
+               console.log('Speech recognition ended.');
+           };
+       });
+   </script>
+</body>
+</html>
